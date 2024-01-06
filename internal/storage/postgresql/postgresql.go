@@ -59,13 +59,43 @@ func (s *Storage) User(ctx context.Context, email string) (*models.User, error) 
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return &user, err
+	return &user, nil
 }
 
 func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
-	panic("implement this")
+	const op = "storage.postgresql.IsAdmin"
+
+	stmt, err := s.db.Prepare(`SELECT is_admin FROM users WHERE id = $1`)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+	result := stmt.QueryRowContext(ctx, userID)
+
+	var isAdmin bool
+
+	err = result.Scan(&isAdmin)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return isAdmin, nil
 }
 
 func (s *Storage) App(ctx context.Context, appID int) (*models.App, error) {
-	panic("implement this")
+	const op = "storage.postgresql.App"
+
+	stmt, err := s.db.Prepare(`SELECT id, name, secret FROM apps WHERE id = $1`)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	result := stmt.QueryRowContext(ctx, appID)
+
+	var app models.App
+
+	err = result.Scan(&app.ID, &app.Name, &app.Secret)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &app, nil
 }
