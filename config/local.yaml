@@ -1,0 +1,6 @@
+env: "local" #dev, prod
+token_ttl: 1h
+grpc:
+  port: 44044
+  timeout: 5h
+database_dsn: "postgresql://postgres:admin@localhost:5432/auth"

@@ -1,0 +1,9 @@
+version: "3"
+
+tasks:
+  migrate:
+    aliases:
+      - mig
+    desc: "Migrate postgresql"
+    cmds:
+      - go run ./cmd/migrator/main.go --postgres-url="postgresql://postgres:admin@localhost:5432/auth" --migration-path=./migrations
