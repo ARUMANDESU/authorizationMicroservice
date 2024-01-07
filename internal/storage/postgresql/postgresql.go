@@ -2,9 +2,12 @@ package postgresql
 
 import (
 	"authorizationMicroservice/internal/domain/models"
+	"authorizationMicroservice/internal/storage"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -37,6 +40,13 @@ func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (
 
 	err = result.Scan(&id)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				// Handle the duplicate key error
+				return 0, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
+			}
+		}
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -56,6 +66,9 @@ func (s *Storage) User(ctx context.Context, email string) (*models.User, error) 
 
 	err = result.Scan(&user.ID, &user.Email, &user.PassHash)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -75,6 +88,9 @@ func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 
 	err = result.Scan(&isAdmin)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
 		return false, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -94,6 +110,9 @@ func (s *Storage) App(ctx context.Context, appID int) (*models.App, error) {
 
 	err = result.Scan(&app.ID, &app.Name, &app.Secret)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("%s: %w", op, storage.ErrAppNotFound)
+		}
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
