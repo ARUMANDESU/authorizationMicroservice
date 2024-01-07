@@ -19,22 +19,23 @@ type GRPC struct {
 	Timeout time.Duration `yaml:"timeout"`
 }
 
-type Database struct {
-}
-
 func MustLoad() *Config {
 	path := fetchConfigPath()
 	if path == "" {
 		panic("config path is empty")
 	}
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		panic("config file does not exist: " + path)
+	return MustLoadByPath(path)
+}
+
+func MustLoadByPath(configPath string) *Config {
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		panic("config file does not exist: " + configPath)
 	}
 
 	var cfg Config
 
-	err := cleanenv.ReadConfig(path, &cfg)
+	err := cleanenv.ReadConfig(configPath, &cfg)
 	if err != nil {
 		panic("failed to read config: " + err.Error())
 	}
