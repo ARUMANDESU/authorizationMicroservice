@@ -49,7 +49,7 @@ func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.
 	if err != nil {
 		switch {
 		case errors.Is(err, auth.ErrInvalidCredentials), errors.Is(err, auth.ErrInvalidAppID):
-			return nil, status.Error(codes.InvalidArgument, "invalid arguments")
+			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
 		default:
 			return nil, status.Error(codes.Internal, "internal error")
 		}
