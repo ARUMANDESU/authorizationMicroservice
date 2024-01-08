@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"authorizationMicroservice/internal/services/auth"
 	"context"
+	"errors"
 	ssov1 "github.com/ARUMANDESU/protos-test/gen/go/sso"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
@@ -45,8 +47,12 @@ func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.
 
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
 	if err != nil {
-		//TODO: ... handle error
-		return nil, status.Error(codes.Internal, "internal error")
+		switch {
+		case errors.Is(err, auth.ErrInvalidCredentials), errors.Is(err, auth.ErrInvalidAppID):
+			return nil, status.Error(codes.InvalidArgument, "invalid arguments")
+		default:
+			return nil, status.Error(codes.Internal, "internal error")
+		}
 	}
 
 	return &ssov1.LoginResponse{Token: token}, nil
@@ -63,6 +69,9 @@ func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*
 
 	userID, err := s.auth.Register(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
+		if errors.Is(err, auth.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "user already exists")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
@@ -79,6 +88,9 @@ func (s *serverAPI) IsAdmin(ctx context.Context, req *ssov1.IsAdminRequest) (*ss
 
 	isAdmin, err := s.auth.IsAdmin(ctx, req.GetUserId())
 	if err != nil {
+		if errors.Is(err, auth.ErrUserNotExist) {
+			return nil, status.Error(codes.NotFound, "user does not exist")
+		}
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
